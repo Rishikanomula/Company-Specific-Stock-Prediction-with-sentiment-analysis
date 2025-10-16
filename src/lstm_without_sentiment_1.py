@@ -7,7 +7,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 
 # Load dataset
-file_path = r"C:\Rishika\SPP\data\RELIANCE_data.csv"
+file_path = r"C:\Rishika\SPP\data\TCS_data_2.csv"
 df = pd.read_csv(file_path)
 
 # Ensure Date column is datetime
