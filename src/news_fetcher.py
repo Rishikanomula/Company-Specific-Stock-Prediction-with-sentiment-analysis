@@ -1,169 +1,93 @@
-# import requests
-# import pandas as pd
-# from datetime import datetime, timedelta
-
-# def fetch_news(company, api_key, days=7):
-#     to_date = datetime.today().strftime('%Y-%m-%d')
-#     from_date = (datetime.today() - timedelta(days=days)).strftime('%Y-%m-%d')
-
-#     # ✅ Use GNews API
-#     url = (
-#         f"https://gnews.io/api/v4/search?"
-#         f"q={company}&lang=en&country=in&max=50&"
-#         f"from={from_date}&to={to_date}&token={api_key}"
-#     )
-
-#     response = requests.get(url)
-#     data = response.json()
-
-#     if 'articles' not in data:
-#         print(f"❌ Error fetching data for {company}:", data)
-#         return None
-
-#     articles = data.get('articles', [])
-#     df = pd.DataFrame([{
-#         'date': a['publishedAt'][:10],
-#         'headline': a['title'],
-#         'source': a['source']['name'],
-#         'url': a['url'],
-#         'company': company  # ✅ Add company column
-#     } for a in articles])
-
-#     print(f"✅ Fetched {len(df)} articles for {company}")
-#     return df
-
-# if __name__ == "__main__":
-#     API_KEY = "c4d63d1a15afbed83577555e7bbc26ee"  
-#     companies = ["Reliance Industries", "Infosys", "TCS", "HDFC Bank"]
-
-#     all_news = pd.DataFrame()
-
-#     for company in companies:
-#         df = fetch_news(company, API_KEY)
-#         if df is not None and not df.empty:
-#             all_news = pd.concat([all_news, df], ignore_index=True)
-
-#     output_file = r"C:\Rishika\SPP\data\live_news.csv"
-#     all_news.to_csv(output_file, index=False)
-#     print(f"\n📰 All company news saved to {output_file}")
-
-
-
-
-# import requests
-# import pandas as pd
-# from datetime import datetime, timedelta
-# import time
-
-# def fetch_news(company, api_key, days=7, max_articles=100):
-#     to_date = datetime.today().strftime('%Y-%m-%d')
-#     from_date = (datetime.today() - timedelta(days=days)).strftime('%Y-%m-%d')
-
-#     url = (
-#         f"https://gnews.io/api/v4/search?"
-#         f"q={company}&lang=en&country=in&max={min(max_articles, 100)}&"
-#         f"from={from_date}&to={to_date}&token={api_key}"
-#     )
-
-#     try:
-#         response = requests.get(url)
-#         data = response.json()
-#     except Exception as e:
-#         print(f"❌ Request error for {company}: {e}")
-#         return None
-
-#     if 'articles' not in data or not data['articles']:
-#         print(f"⚠️ No articles found for {company}")
-#         return None
-
-#     articles = data['articles']
-#     df = pd.DataFrame([{
-#         'date': a.get('publishedAt', '')[:10],
-#         'headline': a.get('title', ''),
-#         'source': a.get('source', {}).get('name', ''),
-#         'url': a.get('url', ''),
-#         'company': company
-#     } for a in articles])
-
-#     print(f"✅ Fetched {len(df)} articles for {company}")
-#     return df
-
-# if __name__ == "__main__":
-#     API_KEY = "c4d63d1a15afbed83577555e7bbc26ee"  
-#     companies = ["TCS"]
-
-#     all_news = pd.DataFrame()
-
-#     for company in companies:
-#         df = fetch_news(company, API_KEY, days=7, max_articles=100)
-#         if df is not None and not df.empty:
-#             all_news = pd.concat([all_news, df], ignore_index=True)
-#         else:
-#             print(f"⚠️ Skipping {company}, no articles fetched")
-#         time.sleep(1)  # ✅ small delay to avoid API rate limits
-
-#     output_file = r"C:\Rishika\SPP\data\tcs_live_news.csv"
-#     all_news.to_csv(output_file, index=False)
-#     print(f"\n📰 All company news saved to {output_file}")
-
-
-
 import requests
 import pandas as pd
-from datetime import datetime, timedelta
 import time
+from transformers import pipeline
 
-def fetch_news(company, api_key, days=30, max_articles=100):
-    to_date = datetime.today().strftime('%Y-%m-%d')
-    from_date = (datetime.today() - timedelta(days=days)).strftime('%Y-%m-%d')
+# Your NewsData.io API key
+API_KEY = "pub_31797144e10748958eeef09791d43e70"
 
-    url = (
-        f"https://newsapi.org/v2/everything?"
-        f"q={company}&"
-        f"from={from_date}&to={to_date}&"
-        f"language=en&"
-        f"sortBy=publishedAt&"
-        f"pageSize={min(max_articles, 100)}&"
-        f"apiKey={api_key}"
-    )
+# Define the companies and date range
+companies = ["TCS", "Reliance", "HDFCBank", "Infosys"]
+from_date = "2020-01-01"
+to_date = "2025-10-03"
 
-    try:
-        response = requests.get(url)
+# Base URL for NewsData.io API
+base_url = "https://newsdata.io/api/1/news"
+
+# Initialize FinBERT sentiment analyzer
+sentiment_pipeline = pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone")
+
+# Function to fetch news articles for a given query
+def fetch_news(company, from_date, to_date, api_key):
+    all_articles = []
+    page = 1
+    while True:
+        params = {
+            'apikey': api_key,
+            'q': company,
+            'from_date': from_date,
+            'to_date': to_date,
+            'language': 'en',
+            'page': page
+        }
+        response = requests.get(base_url, params=params)
         data = response.json()
-    except Exception as e:
-        print(f"❌ Request error for {company}: {e}")
-        return None
 
-    if data.get('status') != 'ok' or not data.get('articles'):
-        print(f"⚠️ No articles found for {company}: {data.get('message', '')}")
-        return None
+        if data.get("status") != "success" or "results" not in data:
+            print(f"No data or error for {company} on page {page}")
+            break
 
-    articles = data['articles']
-    df = pd.DataFrame([{
-        'date': a.get('publishedAt', '')[:10],
-        'headline': a.get('title', ''),
-        'source': a.get('source', {}).get('name', ''),
-        'url': a.get('url', ''),
-        'company': company
-    } for a in articles])
+        articles = data["results"]
+        if not articles:
+            break
 
-    print(f"✅ Fetched {len(df)} articles for {company}")
-    return df
+        all_articles.extend(articles)
 
-if __name__ == "__main__":
-    API_KEY = "22e06e0e0d8d4bf6bf55e4303e836b9b"  # Replace with your NewsAPI key
-    companies = ["TCS"]
+        if page >= data.get("totalPages", page):
+            break
 
-    all_news = pd.DataFrame()
+        page += 1
+        time.sleep(1)  # To avoid API rate limits
 
-    for company in companies:
-        df = fetch_news(company, API_KEY, days=30, max_articles=100)
-        if df is not None and not df.empty:
-            all_news = pd.concat([all_news, df], ignore_index=True)
+    return all_articles
+
+# Function to analyze sentiment scores
+def analyze_sentiments(titles):
+    sentiments = []
+    scores = []
+    batch_size = 16  # process in batches for efficiency
+    for i in range(0, len(titles), batch_size):
+        batch = titles[i:i+batch_size]
+        results = sentiment_pipeline(batch)
+        for res in results:
+            sentiments.append(res['label'])
+            scores.append(res['score'])
+    return sentiments, scores
+
+# Collect news, analyze sentiment, and save separately
+for company in companies:
+    print(f"Fetching news for {company}...")
+    articles = fetch_news(company, from_date, to_date, API_KEY)
+    if articles:
+        df_company = pd.DataFrame(articles)
+        if 'title' in df_company.columns:
+            # Fill missing titles with empty string to avoid errors
+            df_company['title'] = df_company['title'].fillna('')
+
+            # Analyze sentiment of titles
+            sentiments, scores = analyze_sentiments(df_company['title'].tolist())
+
+            df_company['sentiment'] = sentiments
+            df_company['sentiment_score'] = scores
+
         else:
-            print(f"⚠️ Skipping {company}, no articles fetched")
-        time.sleep(1)  # small delay to avoid API rate limits
+            df_company['sentiment'] = None
+            df_company['sentiment_score'] = None
 
-    output_file = r"C:\Rishika\SPP\data\tcs_live_news.csv"
-    all_news.to_csv(output_file, index=False)
-    print(f"\n📰 All company news saved to {output_file}")
+        # Save each company's data separately
+        df_company.to_csv(f"C:\Rishika\SPP\data\{company}_news_sentiments_2020_2025.csv", index=False)
+        print(f"Saved {company} news with sentiment.")
+    else:
+        print(f"No articles found for {company}.")
+
+print("All company news data with sentiments saved.")
