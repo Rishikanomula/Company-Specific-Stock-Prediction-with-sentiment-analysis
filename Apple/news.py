@@ -1,4 +1,4 @@
-# nyt_2020_to_today_scraper.py
+# nyt_2024_10_22_to_2025_10_22_scraper.py
 from pynytimes import NYTAPI
 import pandas as pd
 from datetime import datetime, timedelta
@@ -27,32 +27,45 @@ logging.basicConfig(
 SEARCH_TERMS = "apple iphone ipad macbook"
 SECTIONS = ["Technology", "Business Day", "Opinion"]
 
-# Date range: 2020-01-01 to today
-START_DATE = datetime(2020, 1, 1)
-END_DATE = datetime(2025,10,21)
+# Date range: 22-Oct-2024 to 22-Oct-2025
+START_DATE = datetime(2024, 10, 22)
+END_DATE = datetime(2025, 10, 22)
 
 # -----------------------------
 # HELPER FUNCTION TO FETCH ARTICLES
 # -----------------------------
 
-def fetch_month_articles(year, month):
+def fetch_month_articles(year, month, start, end):
     """Fetch all articles for a given month using NYT API."""
     try:
         begin = datetime(year, month, 1)
-        # Next month (end exclusive)
-        if month == 12:
-            end = datetime(year + 1, 1, 1) - timedelta(days=1)
-        else:
-            end = datetime(year, month + 1, 1) - timedelta(days=1)
 
-        logging.info(f"Fetching {year}-{month:02d} ...")
+        # Compute month end
+        if month == 12:
+            month_end = datetime(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            month_end = datetime(year, month + 1, 1) - timedelta(days=1)
+
+        # Clip month range to our desired start/end
+        month_start = max(begin, start)
+        month_end = min(month_end, end)
+
+        if month_start > end:
+            return []
+
+        logging.info(f"Fetching {month_start.date()} to {month_end.date()} ...")
+
+        # Convert SECTIONS into a filter query string
+        fq_query = " OR ".join([f'section_name:("{section}")' for section in SECTIONS])
 
         data = nyt.article_search(
             query=SEARCH_TERMS,
             results=100,
-            sections=SECTIONS,
-            dates={"begin": begin, "end": end},
-            options={"sort": "newest"}
+            dates={"begin": month_start, "end": month_end},
+            options={
+                "sort": "newest",
+                "fq": fq_query
+            }
         )
 
         articles = []
@@ -67,8 +80,8 @@ def fetch_month_articles(year, month):
                 "section_name": item.get("section_name")
             })
 
-        logging.info(f"Collected {len(articles)} articles from {year}-{month:02d}")
-        time.sleep(2)  # obey NYT rate limits
+        logging.info(f"Collected {len(articles)} articles from {month_start.date()} to {month_end.date()}")
+        time.sleep(2)  # respect NYT API rate limits
         return articles
 
     except Exception as e:
@@ -81,11 +94,12 @@ def fetch_month_articles(year, month):
 # -----------------------------
 
 def collect_all_articles(start, end):
+    """Loop through all months between start and end dates."""
     current = datetime(start.year, start.month, 1)
     all_articles = []
 
     while current <= end:
-        month_articles = fetch_month_articles(current.year, current.month)
+        month_articles = fetch_month_articles(current.year, current.month, start, end)
         all_articles.extend(month_articles)
 
         # move to next month
@@ -101,11 +115,11 @@ def collect_all_articles(start, end):
 # -----------------------------
 
 if __name__ == "__main__":
-    logging.info("NYT Scraper started for 2020-01-01 to present...")
+    logging.info(f"NYT Scraper started for {START_DATE.date()} to {END_DATE.date()} ...")
 
     articles = collect_all_articles(START_DATE, END_DATE)
     df = pd.DataFrame(articles)
-    df.to_csv("nyt_apple_articles_2020_to_today.csv", index=False)
+    df.to_csv("nyt_apple_articles_2024_10_22_to_2025_10_22.csv", index=False)
 
     logging.info(f"Saved {len(df)} articles total.")
     print(f"✅ Saved {len(df)} articles from {START_DATE.date()} to {END_DATE.date()}")
