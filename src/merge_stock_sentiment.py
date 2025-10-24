@@ -1,24 +1,53 @@
 import pandas as pd
 
-# Load data
-news_df = pd.read_csv(r"C:\Rishika\SPP\data\live_news_with_finbert.csv")
-news_df['date'] = pd.to_datetime(news_df['date'])
+# ========================
+# File paths
+# ========================
+sentiment_file = r"C:\Rishika\SPP\hdfc bank news\hdfc_sentiment_news.csv"
+stock_file = r"C:\Rishika\SPP\data\HDFCBANK_data.csv"
+output_file = r"C:\Rishika\SPP\hdfc bank news\merged_hdfc_sentiment_stock.csv"
 
-stock_df = pd.read_csv(r"C:\Rishika\SPP\data\HDFCBANK_data.csv")
-stock_df['Date'] = pd.to_datetime(stock_df['Date'])
+# ========================
+# Load both datasets
+# ========================
+sent_df = pd.read_csv(sentiment_file)
+stock_df = pd.read_csv(stock_file)
 
-# Filter Reliance news
-company = "Reliance Industries"
-company_news = news_df[news_df['company'] == company]
+# ========================
+# Clean and convert date columns
+# ========================
 
-# Average sentiment per date
-daily_sentiment = company_news.groupby('date')['finbert_sentiment'].mean().reset_index()
+# For sentiment file (already in YYYY-MM-DD HH:MM:SS)
+sent_df['date'] = pd.to_datetime(sent_df['date'], errors='coerce')
 
-# Merge
-merged_df = pd.merge(stock_df, daily_sentiment, how='left', left_on='Date', right_on='date')
-merged_df['finbert_sentiment'] = merged_df['finbert_sentiment'].fillna(0)
-merged_df.drop(columns=['date'], inplace=True)
+# For stock file (like "08:07:25 29/04/2025 pm IST")
+stock_df['date'] = (
+    stock_df['date']
+    .str.replace('am IST', '', regex=False)
+    .str.replace('pm IST', '', regex=False)
+    .str.strip()
+)
+stock_df['date'] = pd.to_datetime(stock_df['date'], format='%H:%M:%S %d/%m/%Y', errors='coerce')
 
-# Save merged CSV
-merged_df.to_csv("../data/HDFCBANK_merged.csv", index=False)
-print("✅ Saved merged data for Reliance Industries → RELIANCE_merged.csv")
+# ========================
+# Extract only the date part for merging
+# ========================
+sent_df['date_only'] = sent_df['date'].dt.date
+stock_df['date_only'] = stock_df['date'].dt.date
+
+# ========================
+# Merge on date_only
+# ========================
+merged_df = pd.merge(sent_df, stock_df, on='date_only', how='inner', suffixes=('_sent', '_stock'))
+
+# ========================
+# Save the merged dataset
+# ========================
+merged_df.to_csv(output_file, index=False)
+print(f"✅ Merging complete. Saved to: {output_file}")
+
+# ========================
+# Optional: Show a sample
+# ========================
+print("\n📊 Merged Data Preview:")
+print(merged_df.head(10))
