@@ -16,9 +16,21 @@ import matplotlib.pyplot as plt
 # ======================================
 # Example: Merged dataset with sentiment column
 # Columns: ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Sentiment_Score']
-data = pd.read_csv("HDFC_with_sentiment.csv")
+data = pd.read_csv(r"C:\Rishika\SPP\HDFC\merged_hdfc_stock_sentiment.csv")
 data['Date'] = pd.to_datetime(data['Date'])
 data = data.sort_values('Date')
+
+# Convert textual sentiment to numeric values
+sentiment_map = {
+    'Positive': 1,
+    'Negative': -1,
+    'Neutral': 0
+}
+
+# If your column is named 'sentiment', convert it
+if 'sentiment' in data.columns:
+    data['Sentiment_Score'] = data['sentiment'].map(sentiment_map)
+    data.drop(columns=['sentiment'], inplace=True)
 
 # ======================================
 # ⚙️ Feature Selection
