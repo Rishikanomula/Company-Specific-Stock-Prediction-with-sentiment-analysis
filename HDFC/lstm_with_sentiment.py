@@ -7,7 +7,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 import matplotlib.pyplot as plt
-
+import joblib
 # -------------------------------
 # Load the merged dataset
 # -------------------------------
@@ -120,3 +120,8 @@ plt.xlabel('Time')
 plt.ylabel('Price')
 plt.legend()
 plt.show()
+# Save your trained LSTM model
+model.save("lstm_model.h5")
+
+# If you used a MinMaxScaler or StandardScaler for normalization:
+joblib.dump(scaler, "scaler.pkl")
