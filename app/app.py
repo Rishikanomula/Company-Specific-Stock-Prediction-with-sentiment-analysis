@@ -37,7 +37,7 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("💰 Predict Next-Day Closing Price")
 window_size = 30
-recent_data = company_data[['Close', 'compound_score']].tail(window_size).values
+recent_data = company_data[['Close', 'High', 'Low', 'Open', 'Volume']].tail(window_size).values
 
 recent_scaled = scaler.transform(recent_data)
 X_input = np.expand_dims(recent_scaled, axis=0)
