@@ -1,5 +1,4 @@
 # HDFC Stock Price Prediction using LSTMwith Sentiment Analysis
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
@@ -95,6 +94,10 @@ scale_close = scaler.scale_[-1]
 min_close = scaler.min_[-1]
 y_test_actual = y_test / scale_close - min_close / scale_close
 y_pred_actual = y_pred / scale_close - min_close / scale_close
+
+# ✅ Save values for evaluation
+np.save('y_true.npy', y_test_actual)                 # Actual stock prices
+np.save('y_pred_sentiment.npy', y_pred_actual)  
 
 mae = mean_absolute_error(y_test_actual, y_pred_actual)
 mse = mean_squared_error(y_test_actual, y_pred_actual)
