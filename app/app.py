@@ -12,14 +12,14 @@ st.write("Predict next-day closing price for Indian companies using a fine-tuned
 
 @st.cache_resource
 def load_resources():
-    model = load_model(r"HDFC\lstm_model.h5", compile=False)
+    model = load_model(r"C:\Rishika\SPP\HDFC\lstm_model.h5", compile=False)
 
-    scaler = joblib.load(r"HDFC\scaler.pkl")
+    scaler = joblib.load(r"C:\Rishika\SPP\HDFC\scaler.pkl")
     return model, scaler
 
 model, scaler = load_resources()
 
-data = pd.read_csv(r"HDFC\merged_hdfc_stock_sentiment.csv")
+data = pd.read_csv(r"C:\Rishika\SPP\HDFC\merged_hdfc_stock_sentiment.csv")
 
 if 'Company' in data.columns:
     companies = data['Company'].unique()
@@ -50,7 +50,7 @@ st.metric(label="Predicted Next-Day Price", value=f"₹{predicted_price:.2f}")
 st.subheader("📉 Model Performance Visualizations")
 col1, col2 = st.columns(2)
 with col1:
-    st.image(r"app\Figure_1.png", caption="LSTM without Sentiment", use_container_width=True)
+    st.image(r"C:\Rishika\SPP\app\Figure_1.png", caption="LSTM without Sentiment", use_container_width=True)
 with col2:
-    st.image(r"app\Figure_2.png", caption="LSTM with Sentiment", use_container_width=True)
-st.image(r"app\lstm_fined_tuned_modelloss.png", caption="Model Training Loss Curve", use_container_width=True)
+    st.image(r"C:\Rishika\SPP\app\Figure_2.png", caption="LSTM with Sentiment", use_container_width=True)
+st.image(r"C:\Rishika\SPP\app\lstm_fined_tuned_modelloss.png", caption="Model Training Loss Curve", use_container_width=True)
